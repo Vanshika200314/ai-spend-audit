@@ -1,0 +1,33 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Audit {
+  id                  String   @id @default(uuid())
+  createdAt           DateTime @default(now()) @map("created_at")
+  toolsData           Json     @map("tools_data") // Stores complex selections and plans
+  totalMonthlySavings Float    @default(0) @map("total_monthly_savings")
+  totalAnnualSavings  Float    @default(0) @map("total_annual_savings")
+  isPublic            Boolean  @default(true) @map("is_public")
+  leads               Lead[]
+
+  @@map("audits")
+}
+
+model Lead {
+  id          String   @id @default(uuid())
+  auditId     String   @map("audit_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  email       String
+  companyName String?  @map("company_name")
+  role        String?
+  teamSize    String?  @map("team_size")
+  audit       Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@map("leads")
+}
