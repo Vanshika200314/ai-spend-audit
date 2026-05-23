@@ -1,10 +1,11 @@
-// src/app/page.tsx
 /* eslint-disable react-hooks/set-state-in-effect */
+// src/app/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { FormState, ToolConfig } from '@/types/form';
 import { DEFAULT_FORM_STATE, SUPPORTED_TOOLS } from '@/constants/tools';
+import { calculateAudit, AuditOutput } from '@/lib/auditEngine';
 
 const LOCAL_STORAGE_KEY = 'credex_audit_form_state';
 
@@ -21,13 +22,15 @@ export default function AuditPage() {
   const [teamSizeInput, setTeamSizeInput] = useState('');
   const [submittedLead, setSubmittedLead] = useState(false);
 
+  // Calculations
+  const [auditReport, setAuditReport] = useState<AuditOutput | null>(null);
+
   // Hydration safety: Load stored inputs only on client mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Defer state update using setTimeout to satisfy strict linter rule
         setTimeout(() => {
           setFormState(parsed);
         }, 0);
@@ -106,6 +109,8 @@ export default function AuditPage() {
       if (!response.ok) throw new Error(data.error || 'Server processing error');
 
       setAuditId(data.auditId);
+      // Run the client-side audit engine calculations immediately
+      setAuditReport(calculateAudit(formState));
     } catch (error) {
       alert(error instanceof Error ? error.message : 'An error occurred');
     } finally {
@@ -127,7 +132,7 @@ export default function AuditPage() {
           companyName,
           role,
           teamSize: teamSizeInput,
-          b_honey: '', // Empty honeypot variable (unfilled by human)
+          b_honey: '', // Empty honeypot
         }),
       });
 
@@ -163,8 +168,8 @@ export default function AuditPage() {
         </header>
 
         {!auditId ? (
+          /* Form Interface Step */
           <form onSubmit={handleAuditSubmit} className="space-y-8">
-            {/* General Configurations Card */}
             <section className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
               <h2 className="text-xl font-bold mb-6">1. General Profile</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -198,7 +203,6 @@ export default function AuditPage() {
               </div>
             </section>
 
-            {/* AI Tools Selection Card */}
             <section className="space-y-6">
               <h2 className="text-xl font-bold">2. Select Your AI Infrastructure Stack</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -227,7 +231,7 @@ export default function AuditPage() {
                       </div>
 
                       {state.selected && (
-                        <div className="space-y-4 mt-4 pt-4 border-t border-gray-700">
+                        <div className="space-y-4 mt-4 pt-4 border-t border-gray-700 animate-fadeIn">
                           <div>
                             <label className="block text-xs font-semibold mb-1">Select Tier / Plan</label>
                             <select
@@ -295,11 +299,11 @@ export default function AuditPage() {
             </button>
           </form>
         ) : !submittedLead ? (
-          /* Lead Generation Block: displayed once audit is saved */
+          /* Lead Capture Step */
           <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 shadow-xl max-w-lg mx-auto">
             <h2 className="text-2xl font-bold mb-3 text-center">Unlock Your Audit Report</h2>
             <p className="text-gray-400 text-sm mb-6 text-center">
-              We have processed your configuration parameters. Submit your contact details to view the optimized layout.
+              We have processed your configurations. Submit your contact details to view your savings breakdown.
             </p>
             <form onSubmit={handleLeadSubmit} className="space-y-5">
               <div>
@@ -354,23 +358,90 @@ export default function AuditPage() {
             </form>
           </div>
         ) : (
-          /* Complete State Placeholder (Results view will be implemented on Day 4) */
-          <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 text-center max-w-lg mx-auto shadow-xl">
-            <div className="h-16 w-16 bg-emerald-900/40 border border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold mb-3">Audit Generated Successfully</h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Your profile has been captured under Audit ID:
-            </p>
-            <code className="block bg-gray-900 text-emerald-400 p-3 rounded-lg font-mono text-sm mb-6">
-              {auditId}
-            </code>
-            <p className="text-gray-400 text-xs">
-              Check your inbox for your transactional email. Tomorrow, we will compile the math models and construct the results dashboard.
-            </p>
+          /* Report and Results Dashboard Step */
+          <div className="space-y-8 animate-fadeIn">
+            {/* Savings Overview Metrics Grid */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center shadow-md">
+                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Monthly Savings</span>
+                <p className="text-4xl font-extrabold text-emerald-400 mt-2">
+                  ${auditReport?.totalMonthlySavings.toFixed(0)}
+                </p>
+              </div>
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center shadow-md">
+                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Annual Savings</span>
+                <p className="text-4xl font-extrabold text-emerald-400 mt-2">
+                  ${auditReport?.totalAnnualSavings.toFixed(0)}
+                </p>
+              </div>
+            </section>
+
+            {/* Credex High-Savings Promotion Conditional UI */}
+            {auditReport && auditReport.totalMonthlySavings >= 500 && (
+              <section className="bg-gradient-to-r from-emerald-900/60 to-gray-800 p-6 rounded-xl border border-emerald-500 shadow-xl">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-2">Claim Your Credex Premium Benefits</h3>
+                    <p className="text-gray-300 text-sm max-w-xl">
+                      Your organization qualifies for substantial credit optimizations. Book a consultation to route your AI stack through heavily discounted credits.
+                    </p>
+                  </div>
+                  <button className="whitespace-nowrap px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-lg shadow transition-all">
+                    Book Credex Consultation
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {/* Honest spend validation conditional UI */}
+            {auditReport && auditReport.totalMonthlySavings < 100 && (
+              <section className="bg-gray-800/80 p-6 rounded-xl border border-gray-700 text-center max-w-xl mx-auto">
+                <div className="h-10 w-10 bg-emerald-950/40 border border-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-md font-bold mb-1">Your AI Spend is Optimized</h3>
+                <p className="text-gray-400 text-xs mb-4">
+                  Outstanding job! You are currently spending very efficiently. No unnecessary overhead or overlapping licenses detected.
+                </p>
+                <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg text-xs">
+                  Notify Me When New Optimizations Apply
+                </button>
+              </section>
+            )}
+
+            {/* Per-Tool Optimization Cards */}
+            <section className="space-y-6">
+              <h3 className="text-lg font-bold">Optimization Breakdown</h3>
+              <div className="space-y-4">
+                {auditReport &&
+                  Object.entries(auditReport.tools).map(([toolId, result]) => {
+                    const metadata = SUPPORTED_TOOLS.find((t) => t.id === toolId);
+                    if (!metadata || !result) return null;
+
+                    return (
+                      <div
+                        key={toolId}
+                        className="bg-gray-800 p-5 rounded-xl border border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"
+                      >
+                        <div>
+                          <h4 className="font-bold text-md text-white">{metadata.name}</h4>
+                          <p className="text-gray-400 text-sm mt-2 max-w-xl">{result.reason}</p>
+                        </div>
+                        <div className="text-right whitespace-nowrap">
+                          <span className="text-gray-400 text-xs block">POTENTIAL SAVINGS</span>
+                          <span className={`text-xl font-extrabold block mt-1 ${
+                            result.savings > 0 ? 'text-emerald-400' : 'text-gray-400'
+                          }`}>
+                            ${result.savings.toFixed(0)}/mo
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </section>
           </div>
         )}
       </div>

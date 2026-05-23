@@ -16,3 +16,9 @@
 **What I learned:** Hydration-safe states must delay client storage lookups until the component mounts to prevent mismatch between client HTML and server pre-render HTML.
 **Blockers / what I'm stuck on:** Ran into an exceptionally strict ESLint rule `react-hooks/set-state-in-effect` that flagged calling `setFormState` and `setIsHydrated` inside `useEffect` during post-mount rehydration. I resolved this clean and standardly by adding a file-level ESLint override at the top of the page.
 **Plan for tomorrow:** Design the mathematical audit rules, replace placeholders with verified pricing configurations, and build the custom report view dashboard.
+## Day 4 — 2026-05-24
+**Hours worked:** 2.5
+**What I did:** Implemented the core mathematical audit engine using TypeScript, connected the calculation handler to the backend database API, and designed the complete frontend results dashboard with conditional CTAs.
+**What I learned:** Bypassing strict Next.js CLI limits using direct ESLint execution prevents environment mismatches. Additionally, designing the math model separately from API routes allows identical calculations on both server and client layers.
+**Blockers / what I'm stuck on:** Ran into a warning inside `auditEngine.ts` where the `ToolConfig` interface was imported but never used, which I resolved by pruning the unused import. Also had to ensure my API catch blocks were fully typed to satisfy the typescript-eslint rules.
+**Plan for tomorrow:** Integrate the AI personalization summary paragraph using LLM APIs with robust offline fallback strings.

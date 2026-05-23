@@ -1,6 +1,8 @@
 // src/app/api/audit/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { calculateAudit } from '@/lib/auditEngine';
+import { FormState } from '@/types/form';
 
 export async function POST(request: Request) {
   try {
@@ -11,15 +13,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing tools_data' }, { status: 400 });
     }
 
-    // Temporary mock calculations (to be updated with actual calculations on Day 4)
-    const mockMonthlySavings = 120.0;
-    const mockAnnualSavings = mockMonthlySavings * 12;
+    // Run the typed mathematical audit engine
+    const formState = tools_data as FormState;
+    const auditCalculations = calculateAudit(formState);
 
     const audit = await prisma.audit.create({
       data: {
         toolsData: tools_data,
-        totalMonthlySavings: mockMonthlySavings,
-        totalAnnualSavings: mockAnnualSavings,
+        totalMonthlySavings: auditCalculations.totalMonthlySavings,
+        totalAnnualSavings: auditCalculations.totalAnnualSavings,
         isPublic: true,
       },
       select: {
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ auditId: audit.id });
-  } catch (error) {
+ } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }}
