@@ -22,8 +22,10 @@ export default function AuditPage() {
   const [teamSizeInput, setTeamSizeInput] = useState('');
   const [submittedLead, setSubmittedLead] = useState(false);
 
-  // Calculations
+  // Calculations & AI Summaries
   const [auditReport, setAuditReport] = useState<AuditOutput | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   // Hydration safety: Load stored inputs only on client mount
   useEffect(() => {
@@ -47,6 +49,29 @@ export default function AuditPage() {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formState));
     }
   }, [formState, isHydrated]);
+
+  // Fetch AI Summary asynchronously once lead is unlocked
+  useEffect(() => {
+    if (submittedLead && auditId) {
+      setIsLoadingSummary(true);
+      fetch('/api/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auditId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setAiSummary(data.summary);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch AI summary:', err);
+          setAiSummary('Failed to generate personalized recommendations. Please review the detailed cards below.');
+        })
+        .finally(() => {
+          setIsLoadingSummary(false);
+        });
+    }
+  }, [submittedLead, auditId]);
 
   const handleGeneralChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -109,7 +134,6 @@ export default function AuditPage() {
       if (!response.ok) throw new Error(data.error || 'Server processing error');
 
       setAuditId(data.auditId);
-      // Run the client-side audit engine calculations immediately
       setAuditReport(calculateAudit(formState));
     } catch (error) {
       alert(error instanceof Error ? error.message : 'An error occurred');
@@ -374,6 +398,22 @@ export default function AuditPage() {
                   ${auditReport?.totalAnnualSavings.toFixed(0)}
                 </p>
               </div>
+            </section>
+
+            {/* AI Summary Section Card */}
+            <section className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+              <h3 className="text-lg font-bold text-white mb-3">AI-Generated Personal Summary</h3>
+              {isLoadingSummary ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-4 bg-gray-700 rounded w-full"></div>
+                  <div className="h-4 bg-gray-700 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-700 rounded w-4/5"></div>
+                </div>
+              ) : (
+                <p className="text-gray-300 text-sm leading-relaxed font-sans">
+                  {aiSummary || 'Initializing report analysis...'}
+                </p>
+              )}
             </section>
 
             {/* Credex High-Savings Promotion Conditional UI */}

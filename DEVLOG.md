@@ -22,3 +22,9 @@
 **What I learned:** Bypassing strict Next.js CLI limits using direct ESLint execution prevents environment mismatches. Additionally, designing the math model separately from API routes allows identical calculations on both server and client layers.
 **Blockers / what I'm stuck on:** Ran into a warning inside `auditEngine.ts` where the `ToolConfig` interface was imported but never used, which I resolved by pruning the unused import. Also had to ensure my API catch blocks were fully typed to satisfy the typescript-eslint rules.
 **Plan for tomorrow:** Integrate the AI personalization summary paragraph using LLM APIs with robust offline fallback strings.
+## Day 5 — 2026-05-25
+**Hours worked:** 2.0
+**What I did:** Documented system prompts in PROMPTS.md, created an asynchronous serverless route `/api/summary` utilizing direct HTTP calls to Anthropic API with dynamic fallback, and integrated client-side skeleton loader states.
+**What I learned:** Isolating slow LLM API calls into dedicated asynchronous endpoints prevents slow page-loads, allowing the core metrics dashboard to render instantly while the AI summary populates in the background.
+**Blockers / what I'm stuck on:** None today. Bypassing SDK packages in favor of a direct REST HTTP request to Anthropic resolved any possible peer-dependency or versioning conflicts.
+**Plan for tomorrow:** Implement Day 6 features: unique shareable result URLs, stripping identifier data for public security, and configuring Open Graph previews.
