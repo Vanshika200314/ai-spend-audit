@@ -26,6 +26,7 @@ export default function AuditPage() {
   const [auditReport, setAuditReport] = useState<AuditOutput | null>(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Hydration safety: Load stored inputs only on client mount
   useEffect(() => {
@@ -169,6 +170,15 @@ export default function AuditPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!auditId) return;
+    const shareUrl = `${window.location.origin}/share/${auditId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    });
   };
 
   if (!isHydrated) {
@@ -384,20 +394,31 @@ export default function AuditPage() {
         ) : (
           /* Report and Results Dashboard Step */
           <div className="space-y-8 animate-fadeIn">
-            {/* Savings Overview Metrics Grid */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center shadow-md">
-                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Monthly Savings</span>
-                <p className="text-4xl font-extrabold text-emerald-400 mt-2">
-                  ${auditReport?.totalMonthlySavings.toFixed(0)}
-                </p>
+            {/* Savings Overview Metrics Grid & Viral Share Button */}
+            <section className="flex flex-col gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center shadow-md">
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Monthly Savings</span>
+                  <p className="text-4xl font-extrabold text-emerald-400 mt-2">
+                    ${auditReport?.totalMonthlySavings.toFixed(0)}
+                  </p>
+                </div>
+                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center shadow-md">
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Annual Savings</span>
+                  <p className="text-4xl font-extrabold text-emerald-400 mt-2">
+                    ${auditReport?.totalAnnualSavings.toFixed(0)}
+                  </p>
+                </div>
               </div>
-              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-center shadow-md">
-                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Annual Savings</span>
-                <p className="text-4xl font-extrabold text-emerald-400 mt-2">
-                  ${auditReport?.totalAnnualSavings.toFixed(0)}
-                </p>
-              </div>
+              <button
+                onClick={handleCopyShareLink}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow flex items-center justify-center gap-2 transition-all text-sm"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 10.742l4.342-2.171m0 5.858l-4.342-2.172M16 12l4-2-4-2-4 2 4 2zm0 6l4-2-4-2-4 2 4 2zM8 6l4-2-4-2-4 2 4 2z" />
+                </svg>
+                {isCopied ? 'Link Copied to Clipboard!' : 'Copy Shareable Audit Report Link'}
+              </button>
             </section>
 
             {/* AI Summary Section Card */}
